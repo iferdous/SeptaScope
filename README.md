@@ -1,3 +1,8 @@
+Demo Video : https://drive.google.com/file/d/1xOSEvGoM0zrWsq39cwF4XI2T7mvwLP_l/view?usp=sharing
+
+
+
+
 # SeptaScope
 
 SeptaScope is an interactive SEPTA rail visualization prototype for watching the Philadelphia rail network like a live operations map. It shows trains, routes, stations, alerts, delay signals, rider reports, mood reactions, trip logs, and surge forecasts in one map-first interface.
@@ -279,50 +284,5 @@ Live or external:
 - SEPTA Service Alerts.
 - OpenFreeMap/OpenMapTiles vector map data.
 
-Local/prototype:
 
-- Some route shapes and station coordinates.
-- PATCO/trolley/regional rail visual coverage where official realtime vehicle positions are incomplete.
-- Demo train movement when the public vehicle feed does not include the route.
-- Mood reactions.
-- Community reports.
-- Personal trip logs.
-- Transit streaks.
-- Surge forecast heuristic.
 
-## Recommended Production Architecture
-
-```text
-SEPTA static GTFS zip
-        |
-        v
-GTFS ingest worker
-        |
-        v
-Postgres/PostGIS or SQLite cache
-        |
-        v
-official stops, trips, routes, shapes, terminals
-
-SEPTA GTFS-Realtime feeds
-        |
-        v
-polling worker every 10-20 seconds
-        |
-        v
-normalized vehicles, trip updates, alerts
-        |
-        v
-API + WebSocket or Server-Sent Events
-        |
-        v
-SeptaScope map UI
-
-User feedback
-        |
-        v
-moderated report API
-        |
-        v
-short-lived train and station pins
-```
