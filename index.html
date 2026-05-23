@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SeptaScope</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIINfQF4u4u8Q6bPpVVJgkY3T6Usc0b4fwM="
+      crossorigin=""
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <div id="map" class="map" aria-label="Live SEPTA metro map"></div>
+
+      <header class="hud" aria-label="Map controls">
+        <nav id="line-filters" class="line-filters" aria-label="Line filters"></nav>
+        <div class="hud-divider"></div>
+        <div class="hud-stats" aria-label="Live statistics">
+          <span>TRAINS <strong id="active-count">0</strong></span>
+          <span>LINES <strong id="line-mode">ALL</strong></span>
+          <span>UPDATED <strong id="updated-at">--</strong></span>
+        </div>
+        <div class="hud-actions">
+          <button id="refresh" class="icon-button" type="button" title="Refresh">↻</button>
+          <button id="locate" class="icon-button" type="button" title="Center map">⌖</button>
+          <button id="buildings-toggle" class="icon-button buildings-trigger" type="button" title="Toggle OpenFreeMap buildings">▥</button>
+          <button id="theme-toggle" class="icon-button" type="button" title="Toggle theme">◐</button>
+          <button id="report-open" class="icon-button report-trigger" type="button" title="Report an issue">!</button>
+        </div>
+      </header>
+
+      <section id="alert-banner" class="alert-banner hidden" aria-live="polite"></section>
+      <section class="ghost-legend" aria-label="Schedule comparison legend">
+        <div><span class="legend-train"></span><strong>Actual train</strong></div>
+        <div><span class="legend-ghost"></span><strong>Scheduled position</strong></div>
+        <div><span class="legend-gap"></span><strong>Delay gap</strong></div>
+      </section>
+
+      <section id="train-card" class="train-card hidden" aria-live="polite">
+        <div class="train-card-head">
+          <span id="card-badge" class="line-chip small">L</span>
+          <div>
+            <p id="card-route" class="card-kicker">Market-Frankford Line</p>
+            <h1 id="card-title">Train</h1>
+          </div>
+          <div class="card-actions">
+            <button id="ride-along" type="button">Track</button>
+            <button id="log-trip" type="button">Log</button>
+          </div>
+        </div>
+        <dl class="train-facts">
+          <div>
+            <dt>Train ID</dt>
+            <dd id="card-train-id">--</dd>
+          </div>
+          <div>
+            <dt>Status</dt>
+            <dd id="card-status">--</dd>
+          </div>
+          <div>
+            <dt>Location</dt>
+            <dd id="card-location">--</dd>
+          </div>
+          <div>
+            <dt>Next Stop</dt>
+            <dd id="card-next-stop">--</dd>
+          </div>
+          <div>
+            <dt>Destination</dt>
+            <dd id="card-destination">--</dd>
+          </div>
+          <div>
+            <dt>Stops Remaining</dt>
+            <dd id="card-stops">--</dd>
+          </div>
+          <div>
+            <dt>Schedule Gap</dt>
+            <dd id="card-delay">--</dd>
+          </div>
+        </dl>
+        <form id="trip-log-form" class="trip-log-form hidden">
+          <label for="trip-alight-stop">Log this ride</label>
+          <div>
+            <span id="trip-board-stop">Current stop</span>
+            <strong>→</strong>
+            <select id="trip-alight-stop"></select>
+          </div>
+          <small id="trip-distance-preview">Select where you got off.</small>
+          <footer>
+            <button id="trip-log-cancel" type="button">Cancel</button>
+            <button type="submit">Save trip</button>
+          </footer>
+        </form>
+      </section>
+
+      <section id="feed-note" class="feed-note"></section>
+      <section class="map-credit">OpenFreeMap © OpenMapTiles Data from OpenStreetMap</section>
+      <section id="pulse-panel" class="pulse-panel" aria-label="Transit pulse">
+        <div class="pulse-head">
+          <div>
+            <p>Transit Pulse</p>
+            <strong id="pulse-title">Philly network</strong>
+          </div>
+          <span id="pulse-updated">--</span>
+        </div>
+
+        <section class="pulse-section mood-board">
+          <div class="section-title">
+            <span>Mood Board</span>
+            <strong id="mood-target">No station selected</strong>
+          </div>
+          <div id="mood-actions" class="mood-actions"></div>
+          <div id="mood-picker" class="mood-picker hidden" aria-label="More mood reactions"></div>
+          <div id="mood-feed" class="mood-feed"></div>
+        </section>
+
+        <section class="pulse-section">
+          <div class="section-title">
+            <span>Frequent Delays</span>
+            <strong id="delay-source">realtime</strong>
+          </div>
+          <ol id="delay-board" class="delay-board"></ol>
+        </section>
+
+        <section class="pulse-section">
+          <div class="section-title">
+            <span>Surge Forecast</span>
+            <strong id="surge-window">today</strong>
+          </div>
+          <div id="surge-list" class="surge-list"></div>
+        </section>
+
+        <section class="pulse-section my-transit">
+          <div class="section-title">
+            <span>My Transit</span>
+            <strong id="streak-badge">0 day streak</strong>
+          </div>
+          <div class="personal-stats">
+            <div><span id="trip-count">0</span><small>trips</small></div>
+            <div><span id="trip-miles">0</span><small>miles</small></div>
+            <div><span id="favorite-line">--</span><small>top line</small></div>
+          </div>
+          <div id="wrapped-card" class="wrapped-card"></div>
+        </section>
+      </section>
+      <section id="click-hint" class="click-hint brand-mark">
+        <span>SeptaScope</span>
+        <small>Click a train to open live trip details.</small>
+      </section>
+      <section id="report-panel" class="report-panel hidden" aria-label="Report transit issue">
+        <div class="report-head">
+          <div>
+            <p>Community Report</p>
+            <strong id="report-context">What are you seeing?</strong>
+            <small id="report-helper">Train reports attach to train IDs. Station reports attach to selected stations.</small>
+          </div>
+          <button id="report-close" type="button">×</button>
+        </div>
+        <div id="report-options" class="report-options"></div>
+        <form id="report-detail" class="report-detail hidden">
+          <label for="report-note">Describe what is happening</label>
+          <textarea id="report-note" rows="3" maxlength="180" placeholder="Short, safety-aware note for nearby riders"></textarea>
+          <div>
+            <button id="report-back" type="button">Back</button>
+            <button id="report-submit" type="submit">Pin report</button>
+          </div>
+        </form>
+      </section>
+      <div class="zoom-stack" aria-hidden="true">
+        <button id="zoom-in" type="button">+</button>
+        <button id="zoom-out" type="button">−</button>
+      </div>
+    </main>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+    <script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.0.22/leaflet-maplibre-gl.js"></script>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
